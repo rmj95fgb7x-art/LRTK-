@@ -1,0 +1,141 @@
+#![allow(clippy::needless_range_loop)]
+
+/// State for the Lex Regret-Bounded Triage Kernel (LRTK).
+/// Tracks previous mean and previous fused score for temporal smoothing.
+#[derive(Clone, Copy, Debug)]
+pub struct LrtkState {
+    pub prev_mu: f32, // μ_{t-1}
+    pub prev_y:  f32, // y_{t-1}
+}
+
+impl LrtkState {
+    /// Initialize state with neutral values.
+    pub const fn new() -> Self {
+        Self { prev_mu: 0.5, prev_y: 0.5 }
+    }
+}
+
+/// Output of a single LRTK step.
+#[derive(Clone, Copy, Debug)]
+pub struct LrtkOutput {
+    /// Smoothed fused urgency score in [0,1].
+    pub fused_score: f32,
+    /// Triage class: 0 = routine, 1 = soon, 2 = urgent.
+    pub triage_class: u8,
+}
+
+/// Perform one step of Lex Regret-Bounded Triage Kernel.
+///
+/// Inputs:
+/// - `state`: mutable kernel state (prev_mu, prev_y).
+/// - `scores`: [x1, x2, x3, x4] in [0,1], from 4 agents.
+///
+/// Output:
+/// - LrtkOutput { fused_score, triage_class }.
+pub fn lrtk_step(state: &mut LrtkState, scores: [f32; 4]) -> LrtkOutput {
+    // --- Hyperparameters (domain-specific, fixed) ---
+    const LAMBDA1: f32 = 0.5;
+    const LAMBDA2: f32 = 1.0;
+    const GAMMA:   f32 = 1.0;
+    const BETA:    f32 = 0.5;   // temporal smoothing
+
+    // 1) Mean μ_t
+    let mu_t = (scores[0] + scores[1] + scores[2] + scores[3]) * 0.25;
+
+    // 2) Quartiles & IQR (4-element sort)
+    let mut v = scores;
+    // simple insertion sort for 4 elements (no_std-friendly)
+    for i in 1..4 {
+        let mut j = i;
+        while j > 0 && v[j - 1] > v[j] {
+            v.swap(j - 1, j);
+            j -= 1;
+        }
+    }
+    let q1 = v[1];
+    let q3 = v[2];
+    let iqr = q3 - q1;
+
+    // 3) Instability s_t
+    let s_t = LAMBDA1 * (mu_t - state.prev_mu).abs()
+            + LAMBDA2 * iqr;
+
+    // 4) Regret proxies r_i
+    let scale = 1.0 + GAMMA * s_t;
+    let mut r = [0.0_f32; 4];
+    for i in 0..4 {
+        r[i] = (scores[i] - mu_t).abs() * scale;
+    }
+
+    // 5) Keep 3 lowest-r indices (α = 0.25)
+    let mut idx = [0_u8, 1, 2, 3];
+    // sort indices by r[idx]
+    for i in 1..4 {
+        let mut j = i;
+        while j > 0 && r[idx[j as usize - 1] as usize] > r[idx[j as usize] as usize] {
+            idx.swap(j as usize - 1, j as usize);
+            j -= 1;
+        }
+    }
+    let s_idx = [idx[0], idx[1], idx[2]]; // S_t
+
+    // 6) R_t = max r_i over S_t
+    let mut r_max = 0.0_f32;
+    for &i in &s_idx {
+        let ri = r[i as usize];
+        if ri > r_max {
+            r_max = ri;
+        }
+    }
+    if r_max <= 0.0 {
+        r_max = 1e-8; // avoid divide-by-zero
+    }
+
+    // 7) Unnormalized weights
+    let mut w_tilde = [0.0_f32; 4];
+    for &i in &s_idx {
+        let ri = r[i as usize];
+        let val = 1.0 - ri / r_max;
+        w_tilde[i as usize] = if val > 0.0 { val } else { 0.0 };
+    }
+
+    // 8) Normalize weights
+    let mut z = 0.0_f32;
+    for &i in &s_idx {
+        z += w_tilde[i as usize];
+    }
+    if z < 1e-8 {
+        z = 1.0; // fallback
+    }
+    let mut w = [0.0_f32; 4];
+    for &i in &s_idx {
+        w[i as usize] = w_tilde[i as usize] / z;
+    }
+
+    // 9) Fused score y_t
+    let mut y_t = 0.0_f32;
+    for i in 0..4 {
+        y_t += w[i] * scores[i];
+    }
+
+    // 10) Temporal smoothing
+    let y_smooth = BETA * state.prev_y + (1.0 - BETA) * y_t;
+
+    // 11) Triage class
+    let triage_class = if y_smooth < 0.3 {
+        0u8 // routine
+    } else if y_smooth < 0.7 {
+        1u8 // soon
+    } else {
+        2u8 // urgent
+    };
+
+    // 12) Update state
+    state.prev_mu = mu_t;
+    state.prev_y  = y_t;
+
+    LrtkOutput {
+        fused_score: y_smooth,
+        triage_class,
+    }
+}
