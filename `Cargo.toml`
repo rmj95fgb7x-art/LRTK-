@@ -1,0 +1,15 @@
+[package]
+name = "lex-regret-triage-kernel"
+version = "0.1.0"
+edition = "2021"
+license = "PROPRIETARY"
+description = "Lex Regret-Bounded Triage Kernel (LRTK) for pediatric ophthalmology triage with built-in royalty adapter."
+repository = "https://github.com/your-org/lex-regret-triage-kernel"
+
+[lib]
+name = "lex_regret_triage_kernel"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[dependencies]
+# keep empty or add only no_std-friendly deps if needed
