@@ -67,4 +67,4 @@ Patent Status: PCT filed (Lex Liberatum Trust A.T.W.W.)
 Beneficiary: 0x44f8219cBABad92E6bf245D8c767179629D8C689
 License: 25 bp royalty-bearing, irrevocable trust routing
 
-Last Updated: January 1, 2026 https://www.perplexity.ai/search/4eda7a63-757a-4914-8a29-80f7a5191678
+Last Updated: January 1, 2026 
