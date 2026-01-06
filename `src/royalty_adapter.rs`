@@ -1,0 +1,32 @@
+
+***
+
+## 7. `docs/LRTK_SPEC.md`
+
+You can drop in the theorem and algorithm text you already built, adapted for Markdown. For example:
+
+```markdown
+# Lex Regret-Bounded Triage Kernel (LRTK) – Specification
+
+## Problem
+
+(… brief problem statement …)
+
+## Algorithm 1: LRTK
+
+(… paste the Algorithm 1 steps you liked …)
+
+## Theorem 1: Clean-Regime Error Bound
+
+(… theorem statement and short sketch …)
+
+## Theorem 2: Adversarial Robustness
+
+(… theorem statement and short sketch …)
+
+## Royalties
+
+LRTK reuses the royalty functional defined for the Adaptive Spectral
+Kernel Oracle (ASKO). Given history `H_t` and fee base `S_t`, the
+royalty function `R_ASKO(H_t, S_t)` computes the royalty in wei to be
+routed to the Lex Liberatum trust.
