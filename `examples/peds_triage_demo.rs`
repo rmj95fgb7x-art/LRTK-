@@ -1,0 +1,12 @@
+use lex_regret_triage_kernel::lrtk::{LrtkState, lrtk_step};
+
+fn main() {
+    let mut state = LrtkState::new();
+
+    // Example visit with 4 scores
+    let scores = [0.2_f32, 0.8, 0.7, 0.5];
+    let out = lrtk_step(&mut state, scores);
+
+    // In real code you'd log or return this
+    // fused_score ~0.6, triage_class 1 (soon) or 2 (urgent) depending on tuning
+}
