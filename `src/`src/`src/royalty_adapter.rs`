@@ -1,0 +1,36 @@
+/// Adapter for the existing Adaptive Spectral Kernel Oracle royalty functional.
+///
+/// This module does NOT re-implement the spectral royalty math; it just provides
+/// a narrow interface for LRTK to request a royalty amount given:
+/// - history hash or summary,
+/// - stake/fee base S_t.
+///
+/// The implementation is expected to delegate to your existing royalty engine.
+pub struct RoyaltyParams {
+    /// Opaque hash or summary of the relevant history/compliance signal.
+    pub history_hash: [u8; 32],
+    /// Fee base S_t in wei (or domain-specific units).
+    pub stake_wei: u128,
+}
+
+pub struct RoyaltyResult {
+    /// Royalty amount in wei to be routed to the trust.
+    pub royalty_wei: u128,
+}
+
+pub trait RoyaltyEngine {
+    /// Compute royalty based on history + stake.
+    fn compute_royalty(&self, params: &RoyaltyParams) -> RoyaltyResult;
+}
+
+/// Example placeholder engine that just returns 0.
+/// In production, implement RoyaltyEngine by delegating to your
+/// existing spectral royalty functional.
+pub struct NoopRoyaltyEngine;
+
+impl RoyaltyEngine for NoopRoyaltyEngine {
+    fn compute_royalty(&self, params: &RoyaltyParams) -> RoyaltyResult {
+        let _ = params;
+        RoyaltyResult { royalty_wei: 0 }
+    }
+}
