@@ -1,0 +1,41 @@
+# Lex Regret-Bounded Triage Kernel (LRTK)
+
+Lex Regret-Bounded Triage Kernel (LRTK) fuses four triage scores
+(2 AI models, 1 clinician, 1 protocol) into a single urgency score
+and triage class (routine / soon / urgent) for pediatric ophthalmology.
+
+It is designed to be:
+
+- Deterministic and `no_std`-friendly (Rust).
+- Robust to outliers and adversarial inputs via regret-based trimming.
+- Easy to integrate with existing royalty logic from the Adaptive Spectral Kernel Oracle.
+
+## Core idea
+
+At each visit `t`:
+
+1. Compute the mean and interquartile range (IQR) of the 4 scores.
+2. Measure temporal instability relative to the previous mean.
+3. Define a regret proxy for each agent as:
+   `r_i(t) = |x_i(t) - μ_t| * (1 + γ * s_t)`.
+4. Keep the 3 lowest-regret agents; drop the highest-regret one.
+5. Assign clipped linear weights over regret and fuse their scores.
+6. Optionally smooth over time to avoid flip-flops.
+
+Triage buckets (by default):
+
+- `< 0.3`: routine
+- `0.3 – 0.7`: soon
+- `≥ 0.7`: urgent
+
+## Code
+
+The kernel is implemented in `src/lrtk.rs`:
+
+```rust
+use lex_regret_triage_kernel::lrtk::{LrtkState, lrtk_step};
+
+let mut state = LrtkState::new();
+let scores = [0.2_f32, 0.4, 0.9, 0.3];
+let out = lrtk_step(&mut state, scores);
+println!("fused={}, triage={}", out.fused_score, out.triage_class);
