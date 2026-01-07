@@ -1,7 +1,3 @@
-Here’s a tightened, clinic‑ and VC‑ready version of that README top section, keeping your math but sharpening the story.
-
-***
-
 # Lex Regret‑Bounded Triage Kernel (LRTK)
 
 Lex Regret‑Bounded Triage Kernel (LRTK) fuses four independent triage scores  
@@ -14,6 +10,8 @@ LRTK is designed to be:
 - Robust to outliers and adversarial inputs via regret‑based trimming and clipped weights.  
 - Easy to pair with the existing royalty logic from the Adaptive Spectral Kernel Oracle (ASKO).[1]
 
+## See License: 
+https://github.com/rmj95fgb7x-art/LRTK-/blob/main/LICENSE.md
 ## Core idea
 
 At each visit `t`:
